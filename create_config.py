@@ -7,8 +7,8 @@ config.optionxform = str  # ✅ Zachová původní velká písmena!
 config['Paths'] = {
     'log_file_path': './log/app.log',
     'labels_folder': 'T:/Prikazy/DataTPV/ManualLabelPrint_DfA/Etikety',
-    'python_path': 'C:/Users/Home/AppData/Local/Programs/Python/Python313/python.exe',
-    'python_script_path': 'C:/Users/Home/Documents/Coding/Windows/Win_ChangeBarTenderPrinter/ChangeBarTenderPrinter.py'
+    'python_path': 'C:/Users/hradecky/AppData/Local/Programs/Python/Python313/python.exe',
+    'python_script_path': 'C:/GitWork/Windows/Win_ChangeBarTenderPrinter/ChangeBarTenderPrinter.py'
 }
 
 config['PrinterMapping'] = {

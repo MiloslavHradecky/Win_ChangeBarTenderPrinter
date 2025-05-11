@@ -124,8 +124,4 @@ class LoggerManager:
 # 📌 Spuštění procesu
 if __name__ == '__main__':
     printer_changer = PrinterChanger()
-
-    # 📌 Přidáme prázdný řádek na začátku nového spuštění skriptu
-    printer_changer.logger.start_logging_session()
-
     printer_changer.change_printer_for_files()
