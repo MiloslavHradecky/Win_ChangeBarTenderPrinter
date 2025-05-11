@@ -3,12 +3,11 @@
 import os
 import logging
 import win32com.client
-import configparser
 
 __version__ = '1.0.0.0'
 
 # Nastavení logování s časovým razítkem.
-logging.basicConfig(filename='../log/log.txt', level=logging.INFO, encoding='utf-8',
+logging.basicConfig(filename='./log/log.txt', level=logging.INFO, encoding='utf-8',
                     format='%(asctime)s_%(levelname)-7s: %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S')
 
@@ -19,10 +18,10 @@ logger = logging.getLogger(__name__)
 # Funkce pro přidání prázdného řádku a následného logovacího záznamu
 def log_with_empty_line():
     # Zkontroluje, zda soubor existuje
-    if not os.path.exists('../log/log.txt'):
-        open('../log/log.txt', 'w', encoding='utf-8').close()  # Vytvoří soubor, pokud neexistuje
+    if not os.path.exists('./log/log.txt'):
+        open('./log/log.txt', 'w', encoding='utf-8').close()  # Vytvoří soubor, pokud neexistuje
 
-    with open('../log/log.txt', 'a', encoding='utf-8') as log_file:
+    with open('./log/log.txt', 'a', encoding='utf-8') as log_file:
         log_file.write('\n')  # Přidá prázdný řádek
 
 
@@ -38,7 +37,7 @@ def log_with_empty_line():
 ########################################################################################################
 
 def change_printer_for_files(folder_path, prefix_printer_map):
-    bt_app = win32com.client.Dispatch('BarTender.Application')
+    bt_app = win32com.client.GetActiveObject('BarTender.Application')
     bt_app.Visible = False
 
     log_with_empty_line()
@@ -75,13 +74,8 @@ def change_printer_for_files(folder_path, prefix_printer_map):
 # Použití funkce
 folder_path = r'T:\Prikazy\DataTPV\ManualLabelPrint_DfA\Etikety'
 prefix_printer_map = {
-    '25x10_': 'GX420t-25x10',
-    '50x30_': 'GX430t-50x30',
-    '50x45_': 'GX420t-50x45',
-    '57x30_': 'GX430t-57x30',
-    '68x20_': 'GX430t-68x20',
-    '80x30_': 'GX430t-80x30',
-    '80x57_': 'GX430t-80x57'
+    '25x10_': 'OneNote (Desktop)',
+    '50x30_': 'Microsoft Print to PDF'
     # přidej další prefixy a tiskárny podle potřeby
 }
 change_printer_for_files(folder_path, prefix_printer_map)
