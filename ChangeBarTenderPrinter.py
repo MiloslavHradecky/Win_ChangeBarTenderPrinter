@@ -3,82 +3,124 @@
 import os
 import logging
 import win32com.client
+import configparser
 
 __version__ = '1.0.0.0'
 
-# Nastavení logování s časovým razítkem.
-logging.basicConfig(filename='../log/log.txt', level=logging.INFO, encoding='utf-8',
-                    format='%(asctime)s_%(levelname)-7s: %(message)s',
-                    datefmt='%Y-%m-%d %H:%M:%S')
 
-# Vytvoření loggeru.
-logger = logging.getLogger(__name__)
+class PrinterChanger:
+    """
+    Třída pro změnu tiskárny u Bartender souborů.
+
+    - Načítá složku s etiketami z 'config.ini'
+    - Prochází soubory '.btw' a nastavuje správné tiskárny
+    - Ukládá změny zpět do souboru
+    """
+
+    def __init__(self, config_file='config.ini'):
+        """
+        Inicializuje 'PrinterChanger' a načte konfiguraci.
+
+        :param config_file: Cesta ke konfiguračnímu souboru ('config.ini')
+        """
+        config = configparser.ConfigParser()
+        config.optionxform = str
+        config.read(config_file)
+
+        self.folder_path = config.get('Paths', 'labels_folder')
+        self.prefix_printer_map = {
+            '25x10_': 'GX420t-25x10',
+            '50x30_': 'GX430t-50x30',
+            '50x45_': 'GX420t-50x45',
+            '57x30_': 'GX430t-57x30',
+            '68x20_': 'GX430t-68x20',
+            '80x30_': 'GX430t-80x30',
+            '80x57_': 'GX430t-80x57'
+        }
+
+        self.logger = LoggerManager()
+
+    def change_printer_for_files(self):
+        """
+        Prochází soubory '.btw' a nastavuje správnou tiskárnu.
+
+        - Otevře Bartender aplikaci
+        - Pro každý '.btw' soubor nastaví tiskárnu podle prefixu
+        - Uloží změny a zaloguje výsledek
+        """
+        bt_app = win32com.client.Dispatch('BarTender.Application')
+        bt_app.Visible = False
+
+        self.logger.log_with_empty_line()
+
+        # 📌 Projdeme všechny soubory ve složce
+        for filename in os.listdir(self.folder_path):
+            if filename.endswith('.btw'):
+                for prefix, printer_name in self.prefix_printer_map.items():
+                    if filename.startswith(prefix):
+                        file_path = os.path.join(self.folder_path, filename)
+                        try:
+                            bt_format = bt_app.Formats.Open(file_path, False, '')
+                            if bt_format:
+                                bt_format.Printer = printer_name
+                                bt_format.Save()
+                                bt_format.Close(1)  # btDoNotSaveChanges
+                                self.logger.log('Info', f'Tiskárna "{printer_name}" úspěšně změněna pro soubor: {filename}')
+                            else:
+                                self.logger.log('Error', f'Selhalo otevření souboru: {filename}')
+                        except Exception as e:
+                            self.logger.log('Error', f'Chyba při zpracování souboru {filename}: {e}')
+
+        bt_app.Quit(1)  # btDoNotSaveChanges
 
 
-# Funkce pro přidání prázdného řádku a následného logovacího záznamu
-def log_with_empty_line():
-    # Zkontroluje, zda soubor existuje
-    if not os.path.exists('../log/log.txt'):
-        open('../log/log.txt', 'w', encoding='utf-8').close()  # Vytvoří soubor, pokud neexistuje
+class LoggerManager:
+    """
+    Třída pro správu logování aplikace.
 
-    with open('../log/log.txt', 'a', encoding='utf-8') as log_file:
-        log_file.write('\n')  # Přidá prázdný řádek
+    - Nastavuje 'logging' s časovým razítkem
+    - Přidává podporu prázdného řádku před logem
+    - Umožňuje logování různých úrovní ('Info', 'Warning', 'Error')
+    """
 
-# Záznam zpráv různých úrovní
-# logging.debug('Toto je debug zpráva')
-# logging.info('Toto je info zpráva')
-# logging.warning('Toto je varování')
-# logging.error('Toto je chyba')
-# logging.critical('Toto je kritická chyba')
+    def __init__(self, config_file='config.ini'):
+        """
+        Inicializuje 'LoggerManager' a nastaví konfiguraci logování.
 
-########################################################################################################
-# Skript pro změnu tiskárny
-########################################################################################################
+        :param config_file: Cesta ke konfiguračnímu souboru ('config.ini')
+        """
+        config = configparser.ConfigParser()
+        config.optionxform = str
+        config.read(config_file)
 
-def change_printer_for_files(folder_path, prefix_printer_map):
-    bt_app = win32com.client.Dispatch('BarTender.Application')
-    bt_app.Visible = False
+        self.log_file_path = os.path.abspath(config.get('Paths', 'log_file_path'))
 
-    log_with_empty_line()
+        # 📌 Vytvoření adresáře pro log soubor, pokud neexistuje
+        log_dir = os.path.dirname(self.log_file_path)
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
 
-    # Projdeme všechny soubory ve složce
-    for filename in os.listdir(folder_path):
-        if filename.endswith('.btw'):
-            for prefix, printer_name in prefix_printer_map.items():
-                if filename.startswith(prefix):
-                    file_path = os.path.join(folder_path, filename)
-                    try:
-                        # Otevření specifického formátu Bartenderu
-                        bt_format = bt_app.Formats.Open(file_path, False, '')
-                        if bt_format:
-                            # Nastavení nové tiskárny
-                            bt_format.Printer = printer_name
-                            # Uložení změn do souboru
-                            bt_format.Save()
-                            # Zavření formátu
-                            bt_format.Close(1)  # btDoNotSaveChanges
-                            logging.info(f'Tiskárna "{printer_name}" úspěšně změněna pro soubor: {filename}')
-                            # print(f'Tiskárna "{printer_name}" úspěšně změněna pro soubor: {filename}')
-                        else:
-                            logging.error(f'Selhalo otevření souboru: {filename}')
-                            # print(f'Selhalo otevření souboru: {filename}')
-                    except Exception as e:
-                        logging.error(f'Chyba při zpracování souboru {filename}: {e}')
-                        # print(f'Chyba při zpracování souboru {filename}: {e}')
+        logging.basicConfig(
+            filename=self.log_file_path,
+            level=logging.INFO,
+            encoding='utf-8',
+            format='%(asctime)s_%(levelname)-7s: %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S'
+        )
 
-    # Ukončení aplikace Bartender
-    bt_app.Quit(1)  # btDoNotSaveChanges
+        self.logger = logging.getLogger(__name__)
 
-# Použití funkce
-folder_path = r'T:\Prikazy\DataTPV\ManualLabelPrint_DfA\Etikety'
-prefix_printer_map = {
-    '25x10_': 'GX420t-25x10',
-    '50x30_': 'GX430t-50x30',
-    '50x45_': 'GX420t-50x45',
-    '57x30_': 'GX430t-57x30',
-    '68x20_': 'GX430t-68x20',
-    '80x30_': 'GX430t-80x30',
-    '80x57_': 'GX430t-80x57'
-    # přidej další prefixy a tiskárny podle potřeby
-}
-change_printer_for_files(folder_path, prefix_printer_map)
+    def log_with_empty_line(self):
+        """ Přidá prázdný řádek do logu před každým novým logem. """
+        with open(self.log_file_path, 'a', encoding='utf-8') as log_file:
+            log_file.write('\n')
+
+    def log(self, level, message):
+        """ Zaloguje zprávu podle zvolené úrovně. """
+        self.log_with_empty_line()
+        if level == 'Info':
+            self.logger.info(message)
+        elif level == 'Warning':
+            self.logger.warning(message)
+        elif level == 'Error':
+            self.logger.error(message)
