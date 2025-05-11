@@ -12,8 +12,8 @@ config['Paths'] = {
 }
 
 config['PrinterMapping'] = {
-    '25x10_': 'OneNote (Desktop)',
-    '50x30_': 'Microsoft Print to PDF'
+    '25x10_': '420t',
+    '50x30_': '50x30_430t'
 }
 
 # 📌 Write configuration to StringIO for testing

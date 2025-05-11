@@ -45,7 +45,7 @@ class PrinterChanger:
         bt_app = win32com.client.Dispatch('BarTender.Application')
         bt_app.Visible = False
 
-        self.logger.log_with_empty_line()
+        self.logger.start_logging_session()
 
         # 📌 Projdeme všechny soubory ve složce
         for filename in os.listdir(self.folder_path):
@@ -73,7 +73,7 @@ class LoggerManager:
     Třída pro správu logování aplikace.
 
     - Nastavuje 'logging' s časovým razítkem
-    - Přidává podporu prázdného řádku před logem
+    - Přidává prázdný řádek pouze při spuštění skriptu
     - Umožňuje logování různých úrovní ('Info', 'Warning', 'Error')
     """
 
@@ -104,14 +104,15 @@ class LoggerManager:
 
         self.logger = logging.getLogger(__name__)
 
-    def log_with_empty_line(self):
-        """ Přidá prázdný řádek do logu před každým novým logem. """
+    def start_logging_session(self):
+        """
+        Přidá prázdný řádek při spuštění skriptu, aby oddělil každé spuštění od předchozího.
+        """
         with open(self.log_file_path, 'a', encoding='utf-8') as log_file:
             log_file.write('\n')
 
     def log(self, level, message):
         """ Zaloguje zprávu podle zvolené úrovně. """
-        self.log_with_empty_line()
         if level == 'Info':
             self.logger.info(message)
         elif level == 'Warning':
@@ -123,4 +124,8 @@ class LoggerManager:
 # 📌 Spuštění procesu
 if __name__ == '__main__':
     printer_changer = PrinterChanger()
+
+    # 📌 Přidáme prázdný řádek na začátku nového spuštění skriptu
+    printer_changer.logger.start_logging_session()
+
     printer_changer.change_printer_for_files()
