@@ -31,7 +31,7 @@ class PrinterChanger:
         self.bartender_path = config.get('Paths', 'bartender_path')
 
         # 📌 Načteme složky a rozdělíme podle středníku (';')
-        self.labels_folders = config.get('Paths', 'labels_folder').split('; ')
+        self.labels_folders = config.get('Paths', 'labels_folders').split('; ')
 
         # 📌 Odstraníme mezery kolem cest
         self.labels_folders = [folder.strip() for folder in self.labels_folders]
@@ -79,24 +79,29 @@ class PrinterChanger:
 
     def process_folder(self, bt_app, folder_path):
         """
-        Změní tiskárnu pro všechny soubory '.btw' v dané složce.
+        Změní tiskárnu pouze pro soubory '.btw', které mají povolený prefix.
         """
         for filename in os.listdir(folder_path):
             if filename.endswith('.btw'):
-                file_path = os.path.join(folder_path, filename)
-                try:
-                    bt_format = bt_app.Formats.Open(file_path, False, '')
-                    if bt_format:
-                        # 📌 Dynamicky načítáme tiskárnu z 'config.ini'
-                        printer_name = self.prefix_printer_map.get(filename[:filename.index('_')], 'Default Printer')
-                        bt_format.Printer = printer_name
-                        bt_format.Save()
-                        bt_format.Close(1)  # ✅ btDoNotSaveChanges
-                        self.logger.log('Info', f'Tiskárna "{printer_name}" úspěšně změněna pro soubor: {filename}')
-                    else:
-                        self.logger.log('Error', f'Selhalo otevření souboru: {filename}')
-                except Exception as e:
-                    self.logger.log('Error', f'Chyba při zpracování souboru {filename}: {e}')
+                # 📌 Ověříme, zda soubor začíná některým z povolených prefixů
+                prefix = next((p for p in self.prefix_printer_map if filename.startswith(p)), None)
+
+                if prefix:  # ✅ Pokud soubor začíná povoleným prefixem
+                    file_path = os.path.join(folder_path, filename)
+                    try:
+                        bt_format = bt_app.Formats.Open(file_path, False, '')
+                        if bt_format:
+                            printer_name = self.prefix_printer_map[prefix]  # ✅ Načteme správnou tiskárnu z configu
+                            bt_format.Printer = printer_name
+                            bt_format.Save()
+                            bt_format.Close(1)  # ✅ btDoNotSaveChanges
+                            self.logger.log('Info', f'Tiskárna "{printer_name}" úspěšně změněna pro soubor: {filename}')
+                        else:
+                            self.logger.log('Error', f'Selhalo otevření souboru: {filename}')
+                    except Exception as e:
+                        self.logger.log('Error', f'Chyba při zpracování souboru {filename}: {e}')
+                else:
+                    pass
 
 
 class LoggerManager:
