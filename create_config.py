@@ -10,6 +10,11 @@ config['Paths'] = {
     'python_script_path': 'C:/Users/Home/Documents/Coding/Windows/Win_ChangeBarTenderPrinter/ChangeBarTenderPrinter.py'
 }
 
+config['PrinterMapping'] = {
+    '25x10_': 'OneNote (Desktop)',
+    '50x30_': 'Microsoft Print to PDF'
+}
+
 # 📌 Write configuration to StringIO for testing
 configfile = StringIO()
 config.write(configfile)

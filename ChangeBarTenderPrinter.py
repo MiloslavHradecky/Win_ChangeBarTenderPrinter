@@ -28,15 +28,9 @@ class PrinterChanger:
         config.read(config_file)
 
         self.folder_path = config.get('Paths', 'labels_folder')
-        self.prefix_printer_map = {
-            '25x10_': 'GX420t-25x10',
-            '50x30_': 'GX430t-50x30',
-            '50x45_': 'GX420t-50x45',
-            '57x30_': 'GX430t-57x30',
-            '68x20_': 'GX430t-68x20',
-            '80x30_': 'GX430t-80x30',
-            '80x57_': 'GX430t-80x57'
-        }
+
+        # 📌 Převod 'PrinterMapping' z INI na slovník v Pythonu
+        self.prefix_printer_map = {key: value for key, value in config.items('PrinterMapping')}
 
         self.logger = LoggerManager()
 
@@ -64,14 +58,14 @@ class PrinterChanger:
                             if bt_format:
                                 bt_format.Printer = printer_name
                                 bt_format.Save()
-                                bt_format.Close(1)  # btDoNotSaveChanges
+                                bt_format.Close(1)  # ✅ btDoNotSaveChanges
                                 self.logger.log('Info', f'Tiskárna "{printer_name}" úspěšně změněna pro soubor: {filename}')
                             else:
                                 self.logger.log('Error', f'Selhalo otevření souboru: {filename}')
                         except Exception as e:
                             self.logger.log('Error', f'Chyba při zpracování souboru {filename}: {e}')
 
-        bt_app.Quit(1)  # btDoNotSaveChanges
+        bt_app.Quit(1)  # ✅ btDoNotSaveChanges
 
 
 class LoggerManager:
@@ -124,3 +118,9 @@ class LoggerManager:
             self.logger.warning(message)
         elif level == 'Error':
             self.logger.error(message)
+
+
+# 📌 Spuštění procesu
+if __name__ == '__main__':
+    printer_changer = PrinterChanger()
+    printer_changer.change_printer_for_files()
