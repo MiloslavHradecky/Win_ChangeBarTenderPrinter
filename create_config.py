@@ -6,15 +6,11 @@ config.optionxform = str  # ✅ Zachová původní velká písmena!
 
 config['Paths'] = {
     'log_file_path': './log/app.log',
-    'szv_input_file': 'T:/Prikazy/DataTPV/SZV.dat',
-    'csv_input_file': 'T:/Prikazy/DataTPV/ManualLabelPrint/Databaze/MLP.csv',
+    'python_path': 'C:/Users/Home/AppData/Local/Programs/Python/Python313/python.exe',
+    'python_script_path': 'C:/Users/Home/Documents/Coding/Windows/Win_ChangeBarTenderPrinter/ChangeBarTenderPrinter.py',
     'csv_output_file': 'T:/Prikazy/DataTPV/ManualLabelPrint/Etikety/label.csv',
     'bartender_path': 'C:/Program Files (x86)/Seagull/BarTender Suite/bartend.exe',
     'label_folder': 'T:/Prikazy/DataTPV/ManualLabelPrint/Etikety/'
-}
-
-config['Products'] = {
-    'allowed_values': '9159010'
 }
 
 # 📌 Write configuration to StringIO for testing
