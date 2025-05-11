@@ -7,10 +7,7 @@ config.optionxform = str  # ✅ Zachová původní velká písmena!
 config['Paths'] = {
     'log_file_path': './log/app.log',
     'python_path': 'C:/Users/Home/AppData/Local/Programs/Python/Python313/python.exe',
-    'python_script_path': 'C:/Users/Home/Documents/Coding/Windows/Win_ChangeBarTenderPrinter/ChangeBarTenderPrinter.py',
-    'csv_output_file': 'T:/Prikazy/DataTPV/ManualLabelPrint/Etikety/label.csv',
-    'bartender_path': 'C:/Program Files (x86)/Seagull/BarTender Suite/bartend.exe',
-    'label_folder': 'T:/Prikazy/DataTPV/ManualLabelPrint/Etikety/'
+    'python_script_path': 'C:/Users/Home/Documents/Coding/Windows/Win_ChangeBarTenderPrinter/ChangeBarTenderPrinter.py'
 }
 
 # 📌 Write configuration to StringIO for testing
