@@ -13,7 +13,7 @@ class PrinterChanger:
     Třída pro změnu tiskárny u Bartender souborů.
     Obsahuje kontrolu instalace BarTenderu.
 
-    - Načítá složku s etiketami z 'config.ini'
+    - Načítá složku nebo složky s etiketami z 'config.ini'
     - Prochází soubory '.btw' a nastavuje správné tiskárny
     - Ukládá změny zpět do souboru
     """
@@ -30,7 +30,11 @@ class PrinterChanger:
 
         self.bartender_path = config.get('Paths', 'bartender_path')
 
-        self.folder_path = config.get('Paths', 'labels_folder')
+        # 📌 Načteme složky a rozdělíme podle středníku (';')
+        self.labels_folders = config.get('Paths', 'labels_folder').split('; ')
+
+        # 📌 Odstraníme mezery kolem cest
+        self.labels_folders = [folder.strip() for folder in self.labels_folders]
 
         # 📌 Převod 'PrinterMapping' z INI na slovník v Pythonu
         self.prefix_printer_map = {key: value for key, value in config.items('PrinterMapping')}
@@ -52,7 +56,7 @@ class PrinterChanger:
 
     def change_printer_for_files(self):
         """
-        Prochází soubory '.btw' a nastavuje správnou tiskárnu.
+        Prochází soubory '.btw' ve více složkách a nastavuje správnou tiskárnu.
 
         - Otevře Bartender aplikaci
         - Pro každý '.btw' soubor nastaví tiskárnu podle prefixu
@@ -63,25 +67,36 @@ class PrinterChanger:
 
         self.logger.start_logging_session()
 
-        # 📌 Projdeme všechny soubory ve složce
-        for filename in os.listdir(self.folder_path):
-            if filename.endswith('.btw'):
-                for prefix, printer_name in self.prefix_printer_map.items():
-                    if filename.startswith(prefix):
-                        file_path = os.path.join(self.folder_path, filename)
-                        try:
-                            bt_format = bt_app.Formats.Open(file_path, False, '')
-                            if bt_format:
-                                bt_format.Printer = printer_name
-                                bt_format.Save()
-                                bt_format.Close(1)  # ✅ btDoNotSaveChanges
-                                self.logger.log('Info', f'Tiskárna "{printer_name}" úspěšně změněna pro soubor: {filename}')
-                            else:
-                                self.logger.log('Error', f'Selhalo otevření souboru: {filename}')
-                        except Exception as e:
-                            self.logger.log('Error', f'Chyba při zpracování souboru {filename}: {e}')
+        # 📌 Projdeme všechny složky, které jsme načetli z configu
+        for folder_path in self.labels_folders:
+            if os.path.exists(folder_path):
+                self.logger.log('Info', f'📂 Zpracovává se složka: {folder_path}')
+                self.process_folder(bt_app, folder_path)
+            else:
+                self.logger.log('Warning', f'⚠ Složka neexistuje: {folder_path}')
 
         bt_app.Quit(1)  # ✅ btDoNotSaveChanges
+
+    def process_folder(self, bt_app, folder_path):
+        """
+        Změní tiskárnu pro všechny soubory '.btw' v dané složce.
+        """
+        for filename in os.listdir(folder_path):
+            if filename.endswith('.btw'):
+                file_path = os.path.join(folder_path, filename)
+                try:
+                    bt_format = bt_app.Formats.Open(file_path, False, '')
+                    if bt_format:
+                        # 📌 Dynamicky načítáme tiskárnu z 'config.ini'
+                        printer_name = self.prefix_printer_map.get(filename[:filename.index('_')], 'Default Printer')
+                        bt_format.Printer = printer_name
+                        bt_format.Save()
+                        bt_format.Close(1)  # ✅ btDoNotSaveChanges
+                        self.logger.log('Info', f'Tiskárna "{printer_name}" úspěšně změněna pro soubor: {filename}')
+                    else:
+                        self.logger.log('Error', f'Selhalo otevření souboru: {filename}')
+                except Exception as e:
+                    self.logger.log('Error', f'Chyba při zpracování souboru {filename}: {e}')
 
 
 class LoggerManager:
