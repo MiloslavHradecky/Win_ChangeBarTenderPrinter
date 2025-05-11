@@ -11,6 +11,7 @@ __version__ = '1.0.0.0'
 class PrinterChanger:
     """
     Třída pro změnu tiskárny u Bartender souborů.
+    Obsahuje kontrolu instalace BarTenderu.
 
     - Načítá složku s etiketami z 'config.ini'
     - Prochází soubory '.btw' a nastavuje správné tiskárny
@@ -27,12 +28,27 @@ class PrinterChanger:
         config.optionxform = str
         config.read(config_file)
 
+        self.bartender_path = config.get('Paths', 'bartender_path')
+
         self.folder_path = config.get('Paths', 'labels_folder')
 
         # 📌 Převod 'PrinterMapping' z INI na slovník v Pythonu
         self.prefix_printer_map = {key: value for key, value in config.items('PrinterMapping')}
 
         self.logger = LoggerManager()
+
+        # 📌 Kontrola, zda je BarTender nainstalovaný
+        if not self.is_bartender_installed():
+            self.logger.log('Error', '❌ BarTender není nainstalován! Zkontrolujte instalaci před spuštěním skriptu.')
+            exit(1)  # ✅ Ukončí skript s chybovým kódem
+
+    def is_bartender_installed(self):
+        """
+        Ověří, zda existuje 'bartender.exe' v zadané cestě.
+
+        :return: 'True', pokud soubor existuje, jinak 'False'
+        """
+        return os.path.exists(self.bartender_path)
 
     def change_printer_for_files(self):
         """
