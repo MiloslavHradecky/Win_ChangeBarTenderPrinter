@@ -2,10 +2,11 @@
 
 import os
 import logging
+import subprocess
 import win32com.client
 import configparser
 
-__version__ = '1.0.0.0'
+__version__ = '2.0.0.0'
 
 
 class PrinterChanger:
@@ -46,6 +47,12 @@ class PrinterChanger:
             self.logger.log('Error', '❌ BarTender není nainstalován! Zkontrolujte instalaci před spuštěním skriptu.')
             exit(1)  # ✅ Ukončí skript s chybovým kódem
 
+    def check_paths(self):
+        """ 📌 Ověří, zda všechny cesty uvedené v klíči existují. """
+        paths = self.labels_folders
+        result = {path: os.path.exists(path) for path in paths}  # ✅ Ověříme existenci každé cesty
+        return result
+
     def is_bartender_installed(self):
         """
         Ověří, zda existuje 'bartender.exe' v zadané cestě.
@@ -54,14 +61,36 @@ class PrinterChanger:
         """
         return os.path.exists(self.bartender_path)
 
+    def kill_bartender_processes(self):
+        """ Ukončí všechny běžící instance BarTender (Cmdr.exe a bartend.exe). """
+        try:
+            subprocess.run('taskkill /f /im cmdr.exe 1>nul 2>nul', shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
+            subprocess.run('taskkill /f /im bartend.exe 1>nul 2>nul', shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
+
+        except subprocess.CalledProcessError as e:
+            self.logger.log('Error', f'❗ Chyba při ukončování BarTender procesů: {e}')
+
     def change_printer_for_files(self):
         """
         Prochází soubory '.btw' ve více složkách a nastavuje správnou tiskárnu.
 
+        - Ověří existenci složek před spuštěním procesu
         - Otevře Bartender aplikaci
         - Pro každý '.btw' soubor nastaví tiskárnu podle prefixu
         - Uloží změny a zaloguje výsledek
         """
+
+        # 📌 Ověříme existenci všech složek z 'labels_folders'
+        paths_status = self.check_paths()
+
+        missing_paths = [path for path, exists in paths_status.items() if not exists]
+        if missing_paths:
+            self.logger.log('Error', f'❌ Chyba následující složky neexistují: {", ".join(missing_paths)}')
+            exit(1)  # ✅ Ukončíme skript s chybovým kódem
+
+        # 📌 Zavřeme všechny bartender a commander procesy
+        self.kill_bartender_processes()
+
         bt_app = win32com.client.Dispatch('BarTender.Application')
         bt_app.Visible = False
 
@@ -95,11 +124,11 @@ class PrinterChanger:
                             bt_format.Printer = printer_name
                             bt_format.Save()
                             bt_format.Close(1)  # ✅ btDoNotSaveChanges
-                            self.logger.log('Info', f'Tiskárna "{printer_name}" úspěšně změněna pro soubor: {filename}')
+                            self.logger.log('Info', f'ℹ️ Tiskárna "{printer_name}" úspěšně změněna pro soubor: {filename}')
                         else:
-                            self.logger.log('Error', f'Selhalo otevření souboru: {filename}')
+                            self.logger.log('Error', f'❗ Selhalo otevření souboru: {filename}')
                     except Exception as e:
-                        self.logger.log('Error', f'Chyba při zpracování souboru {filename}: {e}')
+                        self.logger.log('Error', f'❗ Chyba při zpracování souboru {filename}: {e}')
                 else:
                     pass
 
