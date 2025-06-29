@@ -11,19 +11,19 @@ __version__ = '2.0.0.0'
 
 class PrinterChanger:
     """
-    Třída pro změnu tiskárny u Bartender souborů.
-    Obsahuje kontrolu instalace BarTenderu.
+    A class for changing default printers in BarTender .btw files.
+    Checks BarTender installation and applies printer settings based on filename prefixes.
 
-    - Načítá složku nebo složky s etiketami z 'config.ini'
-    - Prochází soubory '.btw' a nastavuje správné tiskárny
-    - Ukládá změny zpět do souboru
+    - Loads label folders from 'config.ini'
+    - Iterates through '.btw' files and assigns the correct printer
+    - Saves changes directly to the label file
     """
 
     def __init__(self, config_file='config.ini'):
         """
-        Inicializuje 'PrinterChanger' a načte konfiguraci.
+        Initializes PrinterChanger and loads configuration from the INI file.
 
-        :param config_file: Cesta ke konfiguračnímu souboru ('config.ini')
+        :param config_file: Path to the configuration file ('config.ini')
         """
         config = configparser.ConfigParser()
         config.optionxform = str
@@ -31,38 +31,38 @@ class PrinterChanger:
 
         self.bartender_path = config.get('Paths', 'bartender_path')
 
-        # 📌 Načteme složky a rozdělíme podle středníku (';')
+        # 📌 Load folders and split by semicolon (Načteme složky a rozdělíme podle středníku (';'))
         self.labels_folders = config.get('Paths', 'labels_folders').split('; ')
 
-        # 📌 Odstraníme mezery kolem cest
+        # 📌 Remove trailing spaces (Odstraníme mezery kolem cest)
         self.labels_folders = [folder.strip() for folder in self.labels_folders]
 
-        # 📌 Převod 'PrinterMapping' z INI na slovník v Pythonu
+        # 📌 Convert 'PrinterMapping' section into a dictionary (Převod 'PrinterMapping' z INI na slovník v Pythonu)
         self.prefix_printer_map = {key: value for key, value in config.items('PrinterMapping')}
 
         self.logger = LoggerManager()
 
-        # 📌 Kontrola, zda je BarTender nainstalovaný
+        # 📌 Verify BarTender installation (Kontrola, zda je BarTender nainstalovaný)
         if not self.is_bartender_installed():
             self.logger.log('Error', '❌ BarTender není nainstalován! Zkontrolujte instalaci před spuštěním skriptu.')
-            exit(1)  # ✅ Ukončí skript s chybovým kódem
+            exit(1)
 
     def check_paths(self):
-        """ 📌 Ověří, zda všechny cesty uvedené v klíči existují. """
+        """ 📌 Checks whether each folder path listed in config exists. """
         paths = self.labels_folders
-        result = {path: os.path.exists(path) for path in paths}  # ✅ Ověříme existenci každé cesty
+        result = {path: os.path.exists(path) for path in paths}
         return result
 
     def is_bartender_installed(self):
         """
-        Ověří, zda existuje 'bartender.exe' v zadané cestě.
+        Verifies that 'bartender.exe' exists at the configured path.
 
-        :return: 'True', pokud soubor existuje, jinak 'False'
+        :return: True if the executable is found, False otherwise.
         """
         return os.path.exists(self.bartender_path)
 
     def kill_bartender_processes(self):
-        """ Ukončí všechny běžící instance BarTender (Cmdr.exe a bartend.exe). """
+        """ Terminates all running BarTender and Commander processes. """
         try:
             subprocess.run('taskkill /f /im cmdr.exe 1>nul 2>nul', shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
             subprocess.run('taskkill /f /im bartend.exe 1>nul 2>nul', shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
@@ -72,23 +72,22 @@ class PrinterChanger:
 
     def change_printer_for_files(self):
         """
-        Prochází soubory '.btw' ve více složkách a nastavuje správnou tiskárnu.
+        Updates the assigned printer in all valid '.btw' files across configured directories.
 
-        - Ověří existenci složek před spuštěním procesu
-        - Otevře Bartender aplikaci
-        - Pro každý '.btw' soubor nastaví tiskárnu podle prefixu
-        - Uloží změny a zaloguje výsledek
+        - Validates all label paths
+        - Closes any active BarTender processes
+        - Opens each '.btw' file and assigns the correct printer based on prefix
+        - Logs success or failure for each file
         """
 
-        # 📌 Ověříme existenci všech složek z 'labels_folders'
+        # 📌 Verify all folders from 'labels_folders' exist (Ověříme existenci všech složek z 'labels_folders')
         paths_status = self.check_paths()
-
         missing_paths = [path for path, exists in paths_status.items() if not exists]
+
         if missing_paths:
             self.logger.log('Error', f'❌ Chyba následující složky neexistují: {", ".join(missing_paths)}')
-            exit(1)  # ✅ Ukončíme skript s chybovým kódem
+            exit(1)
 
-        # 📌 Zavřeme všechny bartender a commander procesy
         self.kill_bartender_processes()
 
         bt_app = win32com.client.Dispatch('BarTender.Application')
@@ -96,7 +95,6 @@ class PrinterChanger:
 
         self.logger.start_logging_session()
 
-        # 📌 Projdeme všechny složky, které jsme načetli z configu
         for folder_path in self.labels_folders:
             if os.path.exists(folder_path):
                 self.logger.log('Info', f'📂 Zpracovává se složka: {folder_path}')
@@ -108,14 +106,17 @@ class PrinterChanger:
 
     def process_folder(self, bt_app, folder_path):
         """
-        Změní tiskárnu pouze pro soubory '.btw', které mají povolený prefix.
+        Processes each '.btw' file in the given folder and applies the correct printer.
+
+        :param bt_app: BarTender COM application instance
+        :param folder_path: Full path to the directory
         """
         for filename in os.listdir(folder_path):
             if filename.endswith('.btw'):
-                # 📌 Ověříme, zda soubor začíná některým z povolených prefixů
+                # 📌 Verify that the file begins with one of the allowed prefixes (Ověříme, zda soubor začíná některým z povolených prefixů)
                 prefix = next((p for p in self.prefix_printer_map if filename.startswith(p)), None)
 
-                if prefix:  # ✅ Pokud soubor začíná povoleným prefixem
+                if prefix:
                     file_path = os.path.join(folder_path, filename)
                     try:
                         bt_format = bt_app.Formats.Open(file_path, False, '')
@@ -135,18 +136,18 @@ class PrinterChanger:
 
 class LoggerManager:
     """
-    Třída pro správu logování aplikace.
+     A logging helper class for tracking activity and errors.
 
-    - Nastavuje 'logging' s časovým razítkem
-    - Přidává prázdný řádek pouze při spuštění skriptu
-    - Umožňuje logování různých úrovní ('Info', 'Warning', 'Error')
+    - Initializes structured logging with timestamps
+    - Starts each session with a blank line for visual separation
+    - Allows Info, Warning, and Error log entries
     """
 
     def __init__(self, config_file='config.ini'):
         """
-        Inicializuje 'LoggerManager' a nastaví konfiguraci logování.
+        Initializes logging settings from the configuration file.
 
-        :param config_file: Cesta ke konfiguračnímu souboru ('config.ini')
+        :param config_file: Path to the config file ('config.ini')
         """
         config = configparser.ConfigParser()
         config.optionxform = str
@@ -154,7 +155,7 @@ class LoggerManager:
 
         self.log_file_path = os.path.abspath(config.get('Paths', 'log_file_path'))
 
-        # 📌 Vytvoření adresáře pro log soubor, pokud neexistuje
+        # 📌 Create a directory for the log file if it does not exist (Vytvoření adresáře pro log soubor, pokud neexistuje)
         log_dir = os.path.dirname(self.log_file_path)
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
@@ -170,14 +171,12 @@ class LoggerManager:
         self.logger = logging.getLogger(__name__)
 
     def start_logging_session(self):
-        """
-        Přidá prázdný řádek při spuštění skriptu, aby oddělil každé spuštění od předchozího.
-        """
+        """ Appends a blank line at the start of a new logging session. """
         with open(self.log_file_path, 'a', encoding='utf-8') as log_file:
             log_file.write('\n')
 
     def log(self, level, message):
-        """ Zaloguje zprávu podle zvolené úrovně. """
+        """ Logs a message at the specified log level. """
         if level == 'Info':
             self.logger.info(message)
         elif level == 'Warning':
@@ -186,7 +185,7 @@ class LoggerManager:
             self.logger.error(message)
 
 
-# 📌 Spuštění procesu
+# 📌 Entry point (Spuštění procesu)
 if __name__ == '__main__':
     printer_changer = PrinterChanger()
     printer_changer.change_printer_for_files()
