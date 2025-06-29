@@ -1,23 +1,23 @@
 # 🖨️ ChangeBarTenderPrinter
 
-Nástroj pro hromadnou změnu výchozí tiskárny v BarTender `.btw` souborech na základě jejich názvu.  
-Spouštěno přes `.vbs → PowerShell → Python`, plně konfigurovatelné přes `config.ini`.
+A tool for batch-updating the default printer in BarTender `.btw` label files based on filename prefixes.  
+Executed via `.vbs → PowerShell → Python`, fully configurable through `config.ini`.
 
 ---
 
-## 🔧 Co to dělá
+## 🔧 What It Does
 
-- Načte složky s etiketami z `config.ini`
-- Pro každý `.btw` soubor detekuje prefix v názvu
-- Na základě prefixu vybere správnou tiskárnu (dle mapování v configu)
-- Uloží aktualizovaný `.btw` soubor
+- Loads label directories from `config.ini`
+- Detects prefix in each `.btw` filename
+- Uses the prefix to determine the correct printer (based on a config mapping)
+- Saves the updated `.btw` file
 
 ---
 
-## 🚀 Jak to funguje
+## 🚀 How It Works
 
 ### 1. `ChangeBarTenderPrinter.vbs`
-Spustí celý proces nenápadně na pozadí:
+Runs the whole process silently in the background:
 
 ```vbscript
 Set WshShell = CreateObject("WScript.Shell")
@@ -25,39 +25,35 @@ WshShell.Run "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ""...Chang
 Set WshShell = Nothing
 ```
 
-### 2. `ChangeBarTenderPrinter.vbs`
-- Spouštěcí skript pro uživatele (dvojklikem)
-- Spustí PowerShell s vypnutým oknem
+### 2. `ChangeBarTenderPrinter.ps1`
+- Loads config paths from `config.ini`
+- Launches the Python script with `Start-Process`
+- Optionally shows a MessageBox when configuration is missing or incorrect
 
-### 3. `ChangeBarTenderPrinter.ps1`
-- Načte `config.ini` s cestami
-- Spustí Python skript (`Start-Process`)
-- Volitelně zobrazí MessageBox s chybou při chybějící konfiguraci
-
-### 4. `ChangeBarTenderPrinter.py`
-- Používá COM rozhraní BarTender
-- Na základě názvu souboru `.btw` vybere tiskárnu (prefix → printer)
-- Uloží změny a zaznamená průběh do `.log` souboru
+### 3. `ChangeBarTenderPrinter.py`
+- Uses the BarTender COM interface
+- Based on .btw filename prefixes, it selects the appropriate printer
+- Applies changes and logs results to a `.log` file
 
 ---
 
-## 📁 Struktura projektu
+## 📁 Project Structure
 
 ```
 Win_ChangeBarTenderPrinter/
 │
-├── ChangeBarTenderPrinter.vbs         # VBScript spouštěč
-├── ChangeBarTenderPrinter.ps1         # PowerShell skript
-├── ChangeBarTenderPrinter.py          # Python jádro
-├── config.ini                         # Konfigurace (viz níž)
-├── [ico]/                             # Ikony (např. .ico pro okno)
-├── [log]/                             # Složka s logy
+├── ChangeBarTenderPrinter.vbs         # VBScript launcher
+├── ChangeBarTenderPrinter.ps1         # PowerShell script
+├── ChangeBarTenderPrinter.py          # Python core
+├── config.ini                         # Configuration file
+├── [ico]/                             # Optional icons (e.g., window icon)
+├── [log]/                             # Directory for logs
 └── ...
 ```
 
 ---
 
-## ⚙️ config.ini ukázka
+## ⚙️ Example `config.ini`
 
 ```ini
 [Paths]
@@ -74,38 +70,37 @@ DEF = Brother QL-800
 
 ---
 
-## ▶️ Spuštění
+## ▶️ Running the Script
 
-- Uprav config.ini
-- Dvojklik na ChangeBarTenderPrinter.vbs
-- (nebo spusť ChangeBarTenderPrinter.ps1 ručně při ladění)
-
----
-
-## 📒 Záznamy
-
-Logy se zapisují do .log souboru určeného v config.ini, včetně úspěšných změn i případných chyb.
+- Customize your `config.ini`
+- Double-click `ChangeBarTenderPrinter.vbs` (or run the `.ps1` file manually for debugging)
 
 ---
 
-## 🛠️ Závislosti
+## 📒 Logging
+
+Activity is logged to the file specified in `config.ini` — includes both successes and errors.
+
+---
+
+## 🛠️ Requirements
 
 - 🪟 Windows
 
-- 🐍 Python 3.x + pywin32 (pip install pywin32)
+- 🐍 Python 3.x + `pywin32` (`pip install pywin32`)
 
-- 📦 Nainstalovaný BarTender
+- 📦 BarTender installed
 
 - PowerShell
 
 ---
 
-## 🪪 Licence
+## 🪪 License
 
 MIT
 
 ---
 
-## ✨ Autor
+## ✨ Author
 
-Miloslav Hradecky 📧 Pro dotazy nebo vylepšení: [miloslavhradecky76@gmail.com]
+Miloslav Hradecky 📧 [miloslavhradecky76@gmail.com]
