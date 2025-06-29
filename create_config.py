@@ -2,7 +2,7 @@ import configparser
 from io import StringIO
 
 config = configparser.ConfigParser()
-config.optionxform = str  # ✅ Zachová původní velká písmena!
+config.optionxform = str  # ✅ It retains the original capital letters! (Zachová původní velká písmena!)
 
 config['Paths'] = {
     'log_file_path': './log/app.log',
